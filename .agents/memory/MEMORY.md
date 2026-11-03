@@ -1,0 +1,8 @@
+- [Shopify Storefront API quirks](shopify-storefront-api.md) — Storefront product connections may omit Admin-style count fields such as totalCount.
+- [Shopify connection lifecycle](shopify-connection-lifecycle.md) — Replit-managed Shopify connections provision a new development store before claim/transfer.
+- [Shopify currency markets](shopify-currency-markets.md) — Nigeria country context only returns NGN when the Shopify store/market is configured to price Nigeria in NGN.
+- [Wouter hash navigation](wouter-hash-navigation.md) — Wouter pushState preserves hashes but does not native-scroll to anchors; section links must scroll explicitly.
+- [Workspace package installs](workspace-package-installs.md) — Dependency changes in this pnpm monorepo must target the individual workspace package.
+- [Flutterwave wallet funding](flutterwave-wallet-funding.md) — Wallet credits require provider verification; Shopify order checkout stays authoritative and app wallet credit needs synchronization.
+- [Milmarts staff access](milmarts-staff-authorization.md) — Privileged local accounts must be provisioned by account ID, not unverified email.
+- [Milmarts catalog ownership](milmarts-catalog-ownership.md) — Shopify is a read-only import source; products, checkout, and manual fulfillment belong to Milmarts.

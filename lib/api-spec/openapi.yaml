@@ -1,0 +1,1887 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: storefront
+    description: Shopify storefront catalog and checkout operations
+  - name: orders
+    description: Milmarts-local orders and payment processing
+  - name: notifications
+    description: Opt-in browser push notifications and staff broadcasts
+  - name: admin
+    description: Milmarts staff tools and account administration
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /storefront/visitor-market:
+    get:
+      operationId: getStorefrontVisitorMarket
+      tags: [storefront]
+      summary: Get visitor currency and exchange rates
+      responses:
+        "200":
+          description: Visitor country, currency, and exchange rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorMarket"
+        "503":
+          description: Exchange-rate provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /storefront/products:
+    get:
+      operationId: listStorefrontProducts
+      tags: [storefront]
+      summary: List products from the local Milmarts catalog
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: first
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 24
+            default: 12
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: Published local products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+        "502":
+          description: Shopify storefront unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /storefront/products/{handle}:
+    get:
+      operationId: getStorefrontProduct
+      tags: [storefront]
+      summary: Get a published local product by handle
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Shopify product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Shopify storefront unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /storefront/cart:
+    post:
+      operationId: createStorefrontCart
+      tags: [storefront]
+      summary: Create a local Milmarts cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartInput"
+      responses:
+        "201":
+          description: Shopify cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: Invalid cart request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Shopify storefront unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateStorefrontCart
+      tags: [storefront]
+      summary: Update a Shopify cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartUpdateInput"
+      responses:
+        "200":
+          description: Updated Shopify cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: Invalid cart request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Shopify storefront unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders:
+    get:
+      operationId: listLocalOrders
+      tags: [orders]
+      summary: List the signed-in user's Milmarts orders
+      responses:
+        "200":
+          description: Local Milmarts order history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocalOrderList"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders/wallet:
+    post:
+      operationId: payForOrderWithWallet
+      tags: [orders]
+      summary: Pay for a local order using the Milmarts wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocalOrderCheckoutInput"
+      responses:
+        "201":
+          description: Wallet-paid order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocalOrder"
+        "400":
+          description: Invalid checkout details or cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Insufficient wallet balance or checkout already started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Current product prices could not be verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders/flutterwave:
+    post:
+      operationId: startFlutterwaveOrderPayment
+      tags: [orders]
+      summary: Start Flutterwave payment for a local order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocalOrderCheckoutInput"
+      responses:
+        "201":
+          description: Flutterwave order payment session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlutterwaveOrderPayment"
+        "400":
+          description: Invalid checkout details or cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Checkout already started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Flutterwave or current product prices unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders/{orderNumber}/reconcile:
+    post:
+      operationId: reconcileFlutterwaveOrderPayment
+      tags: [orders]
+      summary: Verify and update a pending card order
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current local order and verified payment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocalOrder"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Order not found for this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders/tracking:
+    get:
+      operationId: listTrackingOrders
+      tags: [orders]
+      summary: List orders available to the signed-in customer or tracking staff
+      responses:
+        "200":
+          description: Orders and tracking permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingOrdersResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /orders/{orderNumber}/tracking:
+    patch:
+      operationId: updateLocalOrderTracking
+      tags: [orders]
+      summary: Add a manual fulfillment update and carrier link
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLocalOrderTrackingInput"
+      responses:
+        "200":
+          description: Updated local order tracking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocalOrder"
+        "400":
+          description: Invalid tracking update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Tracking staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Paid order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Only paid orders can be updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notifications/status:
+    get:
+      operationId: getNotificationStatus
+      tags: [notifications]
+      summary: Get push notification setup and account subscription status
+      responses:
+        "200":
+          description: Push availability and the signed-in user's subscription status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationStatus"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notifications/subscription:
+    post:
+      operationId: savePushSubscription
+      tags: [notifications]
+      summary: Save this signed-in user's browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionInput"
+      responses:
+        "200":
+          description: Push subscription saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationStatus"
+        "400":
+          description: Invalid push subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Push notifications are not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: removePushSubscription
+      tags: [notifications]
+      summary: Remove this signed-in user's browser push subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushUnsubscriptionInput"
+      responses:
+        "200":
+          description: Push subscription removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationStatus"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Load the Milmarts administration overview
+      responses:
+        "200":
+          description: Store administration counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboardSummary"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/products:
+    get:
+      operationId: listAdminProducts
+      tags: [admin]
+      summary: Search products in the local Milmarts catalog
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            maxLength: 100
+        - in: query
+          name: category
+          schema:
+            type: string
+            maxLength: 100
+        - in: query
+          name: limit
+          schema:
+            type: number
+            minimum: 1
+            maximum: 100
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: number
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Local products, including unpublished products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProductList"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createAdminProduct
+      tags: [admin]
+      summary: Add a product directly to the Milmarts catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductInput"
+      responses:
+        "201":
+          description: Created local product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Product handle already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/products/import:
+    post:
+      operationId: importAdminShopifyProducts
+      tags: [admin]
+      summary: Read Shopify products and import new products locally
+      responses:
+        "200":
+          description: Import counts; existing local edits are left unchanged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportResult"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Shopify catalog could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/products/{productId}:
+    patch:
+      operationId: updateAdminProduct
+      tags: [admin]
+      summary: Edit a local product without updating Shopify
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProductUpdateInput"
+      responses:
+        "200":
+          description: Updated local product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid product details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Local product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Product handle already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAdminProduct
+      tags: [admin]
+      summary: Delete a local product while retaining order snapshots
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      responses:
+        "200":
+          description: Local product deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDeleteResult"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Local product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: Search local Milmarts customer accounts
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+            maxLength: 100
+        - in: query
+          name: limit
+          schema:
+            type: number
+            minimum: 1
+            maximum: 100
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: number
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Matching customer accounts without credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserList"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users/{userId}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Edit a customer's profile details
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdateInput"
+      responses:
+        "200":
+          description: Updated customer profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserRecord"
+        "400":
+          description: Invalid profile details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Customer account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email address is already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/transactions:
+    get:
+      operationId: getAdminTransactions
+      tags: [admin]
+      summary: View wallet and order payment records
+      responses:
+        "200":
+          description: Recent wallet ledger, funding attempts, and local order payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTransactionsDashboard"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/staff:
+    get:
+      operationId: listAdminStaff
+      tags: [admin]
+      summary: List staff assignments
+      responses:
+        "200":
+          description: Staff accounts and the primary administrator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaffList"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: assignAdminStaff
+      tags: [admin]
+      summary: Grant staff access to an existing customer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStaffAssignmentInput"
+      responses:
+        "200":
+          description: Staff access assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaffRecord"
+        "400":
+          description: Invalid staff account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Primary administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Customer account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/staff/{userId}:
+    delete:
+      operationId: revokeAdminStaff
+      tags: [admin]
+      summary: Revoke staff access without deleting the account
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      responses:
+        "200":
+          description: Staff access revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaffActionResult"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Primary administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Active staff assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notifications/admin:
+    get:
+      operationId: getAdminNotifications
+      tags: [notifications]
+      summary: Load broadcast settings and notification history for staff
+      responses:
+        "200":
+          description: Subscriber count, push readiness, and recent broadcasts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNotificationsDashboard"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /notifications/admin/send:
+    post:
+      operationId: sendAdminPushNotification
+      tags: [notifications]
+      summary: Send a push notification to opted-in users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPushNotificationInput"
+      responses:
+        "200":
+          description: Push notification delivery results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPushNotificationResult"
+        "400":
+          description: Invalid notification content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Staff access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Push notifications are not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ProductImage:
+      type: object
+      properties:
+        url:
+          type: string
+        altText:
+          type: ["string", "null"]
+      required: [url]
+    Money:
+      type: object
+      properties:
+        amount:
+          type: string
+        currencyCode:
+          type: string
+      required: [amount, currencyCode]
+    NairaMoney:
+      type: object
+      properties:
+        amount:
+          type: string
+        currencyCode:
+          type: string
+          enum: [NGN]
+        rateUpdatedAt:
+          type: ["string", "null"]
+          format: date-time
+        rateIsStale:
+          type: boolean
+      required: [amount, currencyCode, rateUpdatedAt, rateIsStale]
+    VisitorMarket:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+        currencyCode:
+          type: string
+          minLength: 3
+          maxLength: 3
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+        updatedAt:
+          type: string
+          format: date-time
+        isStale:
+          type: boolean
+      required: [countryCode, currencyCode, rates, updatedAt, isStale]
+    NairaPriceRange:
+      type: object
+      properties:
+        minVariantPrice:
+          oneOf:
+            - $ref: "#/components/schemas/NairaMoney"
+            - type: "null"
+        maxVariantPrice:
+          oneOf:
+            - $ref: "#/components/schemas/NairaMoney"
+            - type: "null"
+      required: [minVariantPrice, maxVariantPrice]
+    ProductVariant:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        availableForSale:
+          type: boolean
+        quantityAvailable:
+          type: ["number", "null"]
+        price:
+          $ref: "#/components/schemas/Money"
+        priceInNaira:
+          oneOf:
+            - $ref: "#/components/schemas/NairaMoney"
+            - type: "null"
+      required: [id, title, availableForSale, price, priceInNaira]
+    ProductVariantInput:
+      type: object
+      properties:
+        id:
+          type: string
+          maxLength: 200
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        availableForSale:
+          type: boolean
+        quantityAvailable:
+          type: ["number", "null"]
+          minimum: 0
+        price:
+          $ref: "#/components/schemas/Money"
+      required: [title, availableForSale, price]
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        handle:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        vendor:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        isPublished:
+          type: boolean
+        source:
+          type: string
+          enum: [shopify, manual]
+        featuredImage:
+          oneOf:
+            - $ref: "#/components/schemas/ProductImage"
+            - type: "null"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        priceRange:
+          type: object
+          properties:
+            minVariantPrice:
+              $ref: "#/components/schemas/Money"
+            maxVariantPrice:
+              $ref: "#/components/schemas/Money"
+          required: [minVariantPrice, maxVariantPrice]
+        nairaPriceRange:
+          oneOf:
+            - $ref: "#/components/schemas/NairaPriceRange"
+            - type: "null"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+      required: [id, title, handle, description, category, vendor, tags, isPublished, source, images, priceRange, nairaPriceRange, variants]
+    AdminProductInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        handle:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 10000
+        category:
+          type: string
+          minLength: 1
+          maxLength: 100
+        vendor:
+          type: string
+          maxLength: 150
+        tags:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 50
+        images:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        variants:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/ProductVariantInput"
+        isPublished:
+          type: boolean
+      required: [title, category, variants, isPublished]
+    AdminProductUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        handle:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 10000
+        category:
+          type: string
+          minLength: 1
+          maxLength: 100
+        vendor:
+          type: string
+          maxLength: 150
+        tags:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 50
+        images:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ProductImage"
+        variants:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/ProductVariantInput"
+        isPublished:
+          type: boolean
+    AdminProductList:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        total:
+          type: number
+        categories:
+          type: array
+          items:
+            type: string
+        shopifyImportCompleted:
+          type: boolean
+      required: [products, total, categories, shopifyImportCompleted]
+    ProductImportResult:
+      type: object
+      properties:
+        imported:
+          type: number
+        skipped:
+          type: number
+        total:
+          type: number
+      required: [imported, skipped, total]
+    ProductDeleteResult:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+      required: [deleted]
+    ProductList:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        total:
+          type: number
+        hasNextPage:
+          type: boolean
+        nextCursor:
+          oneOf:
+            - type: string
+            - type: "null"
+      required: [products, total, hasNextPage, nextCursor]
+    CartLineInput:
+      type: object
+      properties:
+        merchandiseId:
+          type: string
+        quantity:
+          type: number
+          minimum: 1
+      required: [merchandiseId, quantity]
+    CartInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CartLineInput"
+      required: [lines]
+    CartUpdateInput:
+      type: object
+      properties:
+        cartId:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartLineInput"
+      required: [cartId, lines]
+    CartLine:
+      type: object
+      properties:
+        id:
+          type: string
+        quantity:
+          type: number
+        title:
+          type: string
+        merchandiseId:
+          type: string
+        price:
+          $ref: "#/components/schemas/Money"
+        priceInNaira:
+          oneOf:
+            - $ref: "#/components/schemas/NairaMoney"
+            - type: "null"
+        image:
+          oneOf:
+            - $ref: "#/components/schemas/ProductImage"
+            - type: "null"
+      required: [id, quantity, title, merchandiseId, price, priceInNaira]
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+        checkoutUrl:
+          type: string
+        totalQuantity:
+          type: number
+        subtotal:
+          $ref: "#/components/schemas/Money"
+        subtotalInNaira:
+          oneOf:
+            - $ref: "#/components/schemas/NairaMoney"
+            - type: "null"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartLine"
+      required: [id, checkoutUrl, totalQuantity, subtotal, subtotalInNaira, lines]
+    LocalOrderCheckoutInput:
+      type: object
+      properties:
+        cartId:
+          type: string
+          minLength: 10
+          maxLength: 512
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/CartLineInput"
+        idempotencyKey:
+          type: string
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        shippingFullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        shippingPhone:
+          type: string
+          minLength: 5
+          maxLength: 40
+        shippingAddress1:
+          type: string
+          minLength: 5
+          maxLength: 250
+        shippingAddress2:
+          type: ["string", "null"]
+          maxLength: 250
+        shippingCity:
+          type: string
+          minLength: 2
+          maxLength: 100
+        shippingRegion:
+          type: string
+          minLength: 2
+          maxLength: 100
+        shippingPostalCode:
+          type: ["string", "null"]
+          maxLength: 30
+        shippingCountry:
+          type: string
+          minLength: 2
+          maxLength: 100
+      required:
+        - cartId
+        - lines
+        - idempotencyKey
+        - shippingFullName
+        - shippingPhone
+        - shippingAddress1
+        - shippingCity
+        - shippingRegion
+        - shippingCountry
+    LocalOrderItem:
+      type: object
+      properties:
+        merchandiseId:
+          type: string
+        title:
+          type: string
+        quantity:
+          type: number
+        unitPriceKobo:
+          type: number
+        lineTotalKobo:
+          type: number
+      required: [merchandiseId, title, quantity, unitPriceKobo, lineTotalKobo]
+    LocalOrderTrackingEvent:
+      type: object
+      properties:
+        id:
+          type: number
+        status:
+          type: string
+          enum: [processing, packed, shipped, delivered]
+        message:
+          type: string
+        location:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, status, message, location, createdAt]
+    LocalOrder:
+      type: object
+      properties:
+        id:
+          type: number
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum: [awaiting_payment, processing, payment_failed, payment_cancelled]
+        paymentMethod:
+          type: string
+          enum: [wallet, card]
+        paymentStatus:
+          type: string
+          enum: [pending, paid, failed]
+        currencyCode:
+          type: string
+          enum: [NGN]
+        subtotalKobo:
+          type: number
+        deliveryFeeKobo:
+          type: number
+        totalKobo:
+          type: number
+        deliveryPricingPending:
+          type: boolean
+        fulfillmentStatus:
+          type: string
+          enum: [processing, packed, shipped, delivered]
+        trackingCarrier:
+          type: ["string", "null"]
+        trackingNumber:
+          type: ["string", "null"]
+        trackingUrl:
+          type: ["string", "null"]
+        trackingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalOrderTrackingEvent"
+        shippingFullName:
+          type: string
+        shippingPhone:
+          type: string
+        shippingAddress1:
+          type: string
+        shippingAddress2:
+          type: ["string", "null"]
+        shippingCity:
+          type: string
+        shippingRegion:
+          type: string
+        shippingPostalCode:
+          type: ["string", "null"]
+        shippingCountry:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: ["string", "null"]
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalOrderItem"
+      required:
+        - id
+        - orderNumber
+        - status
+        - paymentMethod
+        - paymentStatus
+        - currencyCode
+        - subtotalKobo
+        - deliveryFeeKobo
+        - totalKobo
+        - deliveryPricingPending
+        - fulfillmentStatus
+        - trackingCarrier
+        - trackingNumber
+        - trackingUrl
+        - trackingEvents
+        - shippingFullName
+        - shippingPhone
+        - shippingAddress1
+        - shippingAddress2
+        - shippingCity
+        - shippingRegion
+        - shippingPostalCode
+        - shippingCountry
+        - createdAt
+        - paidAt
+        - items
+    LocalOrderList:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalOrder"
+      required: [orders]
+    TrackingOrdersResponse:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalOrder"
+        canManage:
+          type: boolean
+      required: [orders, canManage]
+    UpdateLocalOrderTrackingInput:
+      type: object
+      properties:
+        fulfillmentStatus:
+          type: string
+          enum: [processing, packed, shipped, delivered]
+        trackingCarrier:
+          type: ["string", "null"]
+          maxLength: 100
+        trackingNumber:
+          type: ["string", "null"]
+          maxLength: 150
+        trackingUrl:
+          type: ["string", "null"]
+          maxLength: 500
+          pattern: "^https://"
+        message:
+          type: ["string", "null"]
+          maxLength: 500
+        location:
+          type: ["string", "null"]
+          maxLength: 150
+      required:
+        - fulfillmentStatus
+        - trackingCarrier
+        - trackingNumber
+        - trackingUrl
+        - message
+        - location
+    AdminDashboardSummary:
+      type: object
+      properties:
+        userCount:
+          type: number
+        activeStaffCount:
+          type: number
+        paidOrderCount:
+          type: number
+        walletTransactionCount:
+          type: number
+        pendingFundingCount:
+          type: number
+        walletBalanceTotalKobo:
+          type: number
+      required: [userCount, activeStaffCount, paidOrderCount, walletTransactionCount, pendingFundingCount, walletBalanceTotalKobo]
+    AdminUserRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        walletBalanceKobo:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, firstName, lastName, email, phone, walletBalanceKobo, createdAt]
+    AdminUserList:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserRecord"
+        total:
+          type: number
+      required: [users, total]
+    AdminUserUpdateInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          pattern: '^[^@ ]+@[^@ ]+\.[^@ ]+$'
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 40
+      required: [firstName, lastName, email, phone]
+    AdminStaffRecord:
+      type: object
+      properties:
+        userId:
+          type: number
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        isActive:
+          type: boolean
+        isPrimaryAdmin:
+          type: boolean
+        assignedBy:
+          type: ["number", "null"]
+        assignedAt:
+          type: ["string", "null"]
+          format: date-time
+        revokedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [userId, firstName, lastName, email, isActive, isPrimaryAdmin, assignedBy, assignedAt, revokedAt]
+    AdminStaffList:
+      type: object
+      properties:
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminStaffRecord"
+        canManageStaff:
+          type: boolean
+      required: [staff, canManageStaff]
+    AdminStaffAssignmentInput:
+      type: object
+      properties:
+        userId:
+          type: number
+          minimum: 1
+      required: [userId]
+    AdminStaffActionResult:
+      type: object
+      properties:
+        userId:
+          type: number
+        isActive:
+          type: boolean
+      required: [userId, isActive]
+    AdminWalletTransactionRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        userId:
+          type: number
+        userName:
+          type: string
+        email:
+          type: string
+        amountKobo:
+          type: number
+        type:
+          type: string
+        reference:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, userName, email, amountKobo, type, reference, createdAt]
+    AdminFundingPaymentRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        userId:
+          type: number
+        userName:
+          type: string
+        email:
+          type: string
+        txRef:
+          type: string
+        amountKobo:
+          type: number
+        status:
+          type: string
+        flutterwaveTransactionId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, userId, userName, email, txRef, amountKobo, status, flutterwaveTransactionId, createdAt, completedAt]
+    AdminOrderPaymentRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        orderNumber:
+          type: string
+        userId:
+          type: number
+        userName:
+          type: string
+        email:
+          type: string
+        paymentMethod:
+          type: string
+        paymentStatus:
+          type: string
+        totalKobo:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, orderNumber, userId, userName, email, paymentMethod, paymentStatus, totalKobo, createdAt, paidAt]
+    AdminTransactionsDashboard:
+      type: object
+      properties:
+        walletTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminWalletTransactionRecord"
+        fundingPayments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminFundingPaymentRecord"
+        orderPayments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrderPaymentRecord"
+      required: [walletTransactions, fundingPayments, orderPayments]
+    NotificationStatus:
+      type: object
+      properties:
+        isSubscribed:
+          type: boolean
+        endpoint:
+          type: ["string", "null"]
+        canManage:
+          type: boolean
+        vapidPublicKey:
+          type: ["string", "null"]
+      required: [isSubscribed, endpoint, canManage, vapidPublicKey]
+    PushSubscriptionInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          maxLength: 2048
+          pattern: "^https://"
+        keys:
+          type: object
+          properties:
+            p256dh:
+              type: string
+              maxLength: 256
+            auth:
+              type: string
+              maxLength: 256
+          required: [p256dh, auth]
+      required: [endpoint, keys]
+    PushUnsubscriptionInput:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          maxLength: 2048
+          pattern: "^https://"
+      required: [endpoint]
+    PushNotificationRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        body:
+          type: string
+        targetPath:
+          type: string
+        recipientCount:
+          type: number
+        sentCount:
+          type: number
+        failedCount:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, body, targetPath, recipientCount, sentCount, failedCount, createdAt]
+    AdminNotificationsDashboard:
+      type: object
+      properties:
+        subscriberCount:
+          type: number
+        pushReady:
+          type: boolean
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/PushNotificationRecord"
+      required: [subscriberCount, pushReady, messages]
+    AdminPushNotificationInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        body:
+          type: string
+          minLength: 1
+          maxLength: 250
+        targetPath:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required: [title, body, targetPath]
+    AdminPushNotificationResult:
+      type: object
+      properties:
+        totalRecipients:
+          type: number
+        sentCount:
+          type: number
+        failedCount:
+          type: number
+      required: [totalRecipients, sentCount, failedCount]
+    FlutterwaveOrderPayment:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+        txRef:
+          type: string
+        paymentUrl:
+          type: string
+        totalKobo:
+          type: number
+      required: [orderNumber, txRef, paymentUrl, totalKobo]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+

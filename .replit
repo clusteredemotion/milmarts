@@ -1,0 +1,55 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "milmarts-header-smoke"
+
+[[workflows.workflow]]
+name = "milmarts-header-smoke"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/milmarts-stores run check:header"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+SHOPIFY_STORE_DOMAIN = "ssbctq-nr.myshopify.com"
+FLW_PUBLIC_KEY = "FLWPUBK-2aabf1727b2178d17a4f0dab988a1830-X"
+
+[userenv.development]
+MILMARTS_ADMIN_USER_ID = "2"
+
+[userenv.production]
+MILMARTS_ADMIN_USER_ID = "5"
+
+[nix]
+channel = "stable-25_05"

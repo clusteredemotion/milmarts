@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Milmarts Stores"
+description = "A modern Shopify-powered ecommerce storefront for Milmarts Stores, with a polished catalog, product discovery, cart, and Shopify-hosted checkout."
+version = "1.0.0"
+id = "artifacts/milmarts-stores"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25956
+
+[services.development]
+run = "pnpm --filter @workspace/milmarts-stores run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/milmarts-stores", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/milmarts-stores/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25956"
+BASE_PATH = "/"

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Milmarts</string>
+    <string name="title_activity_main">Milmarts</string>
+    <string name="package_name">com.milmarts.stores</string>
+    <string name="custom_url_scheme">com.milmarts.stores</string>
+</resources>

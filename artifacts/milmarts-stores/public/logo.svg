@@ -1,0 +1,7 @@
+<svg width="250" height="64" viewBox="0 0 250 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Milmarts</title>
+  <rect x="2" y="4" width="56" height="56" rx="18" fill="#FF8266"/>
+  <path d="M15 45V22.6C15 19.4 19 17.9 21.3 20.3L30 29L38.7 20.3C41 18 45 19.5 45 22.6V45H38V30L30 38L22 30V45H15Z" fill="#19302A"/>
+  <text x="71" y="43" fill="#19302A" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="-1.8">milmarts</text>
+  <circle cx="238" cy="39" r="4" fill="#FF8266"/>
+</svg>

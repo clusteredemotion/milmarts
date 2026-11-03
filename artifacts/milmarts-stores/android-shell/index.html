@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#BE1E3E" />
+    <meta name="color-scheme" content="light" />
+    <title>Milmarts</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background: #fffafb;
+        color: #351a22;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        padding:
+          max(24px, env(safe-area-inset-top))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+      }
+
+      main {
+        display: flex;
+        width: min(100%, 340px);
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .brand-logo {
+        display: block;
+        width: min(220px, 66vw);
+        height: auto;
+        margin-bottom: 40px;
+      }
+
+      .spinner {
+        width: 38px;
+        height: 38px;
+        border: 3px solid rgb(190 30 62 / 16%);
+        border-top-color: #be1e3e;
+        border-radius: 50%;
+        animation: spin 850ms linear infinite;
+      }
+
+      .status {
+        margin: 22px 0 0;
+        font-size: 17px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .detail {
+        max-width: 280px;
+        margin: 9px 0 0;
+        color: #75636a;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation-duration: 2.5s;
+        }
+      }
+    </style>
+  </head>
+  <body data-state="loading">
+    <main aria-busy="true">
+      <img
+        class="brand-logo"
+        src="./milmarts-logo.svg"
+        alt="Milmarts"
+        width="250"
+        height="64"
+      />
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="status" id="network-status" role="status" aria-live="polite">
+        Loading Milmarts
+      </p>
+      <p class="detail" id="network-detail">
+        Preparing your store…
+      </p>
+    </main>
+    <script src="./startup.js"></script>
+  </body>
+</html>

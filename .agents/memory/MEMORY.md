@@ -6,3 +6,5 @@
 - [Flutterwave wallet funding](flutterwave-wallet-funding.md) — Wallet credits require provider verification; Shopify order checkout stays authoritative and app wallet credit needs synchronization.
 - [Milmarts staff access](milmarts-staff-authorization.md) — Privileged local accounts must be provisioned by account ID, not unverified email.
 - [Milmarts catalog ownership](milmarts-catalog-ownership.md) — Shopify is a read-only import source; products, checkout, and manual fulfillment belong to Milmarts.
+- [Android CI SDK setup](android-ci-sdkmanager.md) — avoid setup-android's retired `tools` package; install platform-tools and Android platform/build-tools explicitly.
+- [GitHub pushes from Replit](replit-github-push.md) — when the API connector is unavailable, normal HTTPS Git transport may still work; push as a fast-forward from remote main.

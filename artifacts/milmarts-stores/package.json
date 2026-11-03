@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
-    "build:android": "PORT=4173 BASE_PATH=/ pnpm run build && pnpm exec cap sync android && cd android && ./gradlew assembleDebug",
+    "build:android": "pnpm exec cap sync android && cd android && ./gradlew assembleDebug",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "check:header": "env PORT=4173 BASE_PATH=/ pnpm run build && node scripts/check-header-branding.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

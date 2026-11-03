@@ -1,8 +1,11 @@
 # Milmarts Android wrapper
 
-The Android app opens the live Milmarts website at `https://milmarts.app`, so
-the website and API remain the source of truth for sign-in, catalog, checkout,
-wallet, orders, and admin features.
+The APK contains a small local startup screen. It appears immediately, checks
+for access to `https://milmarts.app`, and opens the live site when reachable.
+Without network access it stays on the branded preloader and shows “Waiting for
+Network”; it retries automatically and opens the site once the connection
+returns. The website and API remain the source of truth for sign-in, catalog,
+checkout, wallet, orders, and admin features.
 
 ## Build locally
 
